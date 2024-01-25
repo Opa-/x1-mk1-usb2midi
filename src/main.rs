@@ -1,4 +1,5 @@
 use std::sync::mpsc;
+use std::thread;
 
 use rusb::{Context, Device, HotplugBuilder, Registration, UsbContext};
 
@@ -23,7 +24,7 @@ fn main() -> rusb::Result<()> {
                 .register(&context, Box::new(HotPlugHandler { sender: tx }))?,
         );
 
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             loop {
                 match rx.recv() {
                     Ok(dev) => {
@@ -32,7 +33,11 @@ fn main() -> rusb::Result<()> {
                                 let serial_number = get_serial_number(&handle).trim().to_uppercase().to_owned();
                                 let mut x1mk1 = X1mk1 { handle, serial_number };
                                 x1mk1.read();
-                                read_device(&mut x1mk1);
+                                thread::spawn(move || {
+                                    loop {
+                                        read_device(&mut x1mk1);
+                                    }
+                                });
                             }
                             Err(_) => todo!(),
                         };
