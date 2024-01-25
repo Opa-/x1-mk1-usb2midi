@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use rusb::{Context, Device, HotplugBuilder, Registration, UsbContext};
 
 use crate::kontrol_x1mk1::X1mk1;
+use crate::usb::read_device;
 use crate::usb_hotplug::HotPlugHandler;
 use crate::utils::get_serial_number;
 
@@ -10,10 +11,6 @@ mod usb_hotplug;
 mod kontrol_x1mk1;
 mod usb;
 mod utils;
-
-const USB_ID_VENDOR: u16 = 0x17cc;
-const USB_ID_PRODUCT: u16 = 0x2305;
-const USB_STATE_FD: u8 = 0x84;
 
 fn main() -> rusb::Result<()> {
     if rusb::has_hotplug() {
@@ -31,10 +28,11 @@ fn main() -> rusb::Result<()> {
                 match rx.recv() {
                     Ok(dev) => {
                         match dev.open() {
-                            Ok(handle) => {
+                            Ok(mut handle) => {
                                 let serial_number = get_serial_number(&handle).trim().to_uppercase().to_owned();
-                                let x1mk1 = X1mk1 { handle, serial_number };
-                                x1mk1.read()
+                                let mut x1mk1 = X1mk1 { handle, serial_number };
+                                x1mk1.read();
+                                read_device(&mut x1mk1);
                             }
                             Err(_) => todo!(),
                         };
@@ -45,10 +43,14 @@ fn main() -> rusb::Result<()> {
         });
 
         loop {
-            context.handle_events(None).unwrap();
-            if let Some(reg) = reg.take() {
-                context.unregister_callback(reg);
-            }
+            match context.handle_events(None) {
+                Ok(x) => x,
+                Err(_) => {
+                    if let Some(reg) = reg.take() {
+                        context.unregister_callback(reg);
+                    }
+                }
+            };
         }
     } else {
         eprintln!("libusb compiled without hotplug support");

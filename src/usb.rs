@@ -1,18 +1,19 @@
-use rusb::{Device, DeviceDescriptor, DeviceHandle, Direction, TransferType, UsbContext};
 use std::time::Duration;
-use crate::USB_STATE_FD;
 
-pub fn read_device<T: UsbContext>(
-    device: &Device<T>,
-    device_desc: &DeviceDescriptor,
-    handle: &mut DeviceHandle<T>,
-) -> rusb::Result<()> {
-    handle.reset()?;
+use rusb::{Device, DeviceDescriptor, DeviceHandle, Direction, TransferType, UsbContext};
+use crate::kontrol_x1mk1::X1mk1;
+use crate::utils::get_serial_number;
+
+const USB_STATE_FD: u8 = 0x84;
+
+pub fn read_device<T: UsbContext>(device: &mut X1mk1<T>) -> rusb::Result<()> {
+    device.handle.reset()?;
 
     let timeout = Duration::from_secs(10);
-    let languages = handle.read_languages(timeout)?;
+    let languages = device.handle.read_languages(timeout)?;
+    let device_desc = device.handle.device().device_descriptor()?;
 
-    println!("Active configuration: {}", handle.active_configuration()?);
+    println!("Active configuration: {}", device.handle.active_configuration()?);
     println!("Languages: {:?}", languages);
 
     if !languages.is_empty() {
@@ -20,20 +21,20 @@ pub fn read_device<T: UsbContext>(
 
         println!(
             "Manufacturer: {:?}",
-            handle
-                .read_manufacturer_string(language, device_desc, timeout)
+            device.handle
+                .read_manufacturer_string(language, &device_desc, timeout)
                 .ok()
         );
         println!(
             "Product: {:?}",
-            handle
-                .read_product_string(language, device_desc, timeout)
+            device.handle
+                .read_product_string(language, &device_desc, timeout)
                 .ok()
         );
         println!(
             "Serial Number: {:?}",
-            handle
-                .read_serial_number_string(language, device_desc, timeout)
+            device.handle
+                .read_serial_number_string(language, &device_desc, timeout)
                 .ok()
         );
     }
@@ -44,7 +45,7 @@ pub fn read_device<T: UsbContext>(
         interface: 0,
         setting: 0,
     };
-    // read_endpoint(handle, &endpoint, TransferType::Bulk);
+    read_endpoint(device, &endpoint, TransferType::Bulk);
     Ok(())
 }
 
@@ -83,15 +84,15 @@ fn find_readable_endpoint<T: UsbContext>(
 }
 
 fn read_endpoint<T: UsbContext>(
-    handle: &mut DeviceHandle<T>,
+    device: &mut X1mk1<T>,
     endpoint: &Endpoint,
     transfer_type: TransferType,
 ) {
     // println!("Reading from endpoint: {:?}", endpoint);
 
-    let has_kernel_driver = match handle.kernel_driver_active(endpoint.interface) {
+    let has_kernel_driver = match device.handle.kernel_driver_active(endpoint.interface) {
         Ok(true) => {
-            handle.detach_kernel_driver(endpoint.interface).ok();
+            device.handle.detach_kernel_driver(endpoint.interface).ok();
             true
         }
         _ => false,
@@ -99,15 +100,16 @@ fn read_endpoint<T: UsbContext>(
 
     // println!(" - kernel driver? {}", has_kernel_driver);
 
-    match configure_endpoint(handle, &endpoint) {
+    let serial_number = get_serial_number(&device.handle).trim().to_uppercase().to_owned();
+    match configure_endpoint(device, &endpoint) {
         Ok(_) => {
             let mut buf = [0; 24];
             let timeout = Duration::from_millis(50);
             loop {
                 match transfer_type {
-                    TransferType::Bulk => match handle.read_bulk(endpoint.address, &mut buf, timeout) {
-                        Ok(len) => println!(" - read: {:?}", buf),
-                        Err(err) => println!(" - read: {:?}", buf),
+                    TransferType::Bulk => match device.handle.read_bulk(endpoint.address, &mut buf, timeout) {
+                        Ok(len) => println!(" - {serial_number}: {:?}", buf),
+                        Err(err) => println!(" - {serial_number}: {:?}", buf),
                     },
                     _ => (),
                 }
@@ -117,17 +119,17 @@ fn read_endpoint<T: UsbContext>(
     }
 
     if has_kernel_driver {
-        handle.attach_kernel_driver(endpoint.interface).ok();
+        device.handle.attach_kernel_driver(endpoint.interface).ok();
     }
 }
 
 fn configure_endpoint<T: UsbContext>(
-    handle: &mut DeviceHandle<T>,
+    device: &mut X1mk1<T>,
     endpoint: &Endpoint,
 ) -> rusb::Result<()> {
-    handle.set_active_configuration(endpoint.config)?;
-    handle.claim_interface(endpoint.interface)?;
-    handle.set_alternate_setting(endpoint.interface, endpoint.setting)?;
+    device.handle.set_active_configuration(endpoint.config)?;
+    device.handle.claim_interface(endpoint.interface)?;
+    device.handle.set_alternate_setting(endpoint.interface, endpoint.setting)?;
     Ok(())
 }
 

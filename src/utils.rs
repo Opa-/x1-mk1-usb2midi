@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rusb::{Device, DeviceHandle, UsbContext};
+use rusb::{DeviceHandle, UsbContext};
 
 fn hex2bin(hexnum: u8, binnum: &mut [u8; 8]) {
     // Taken from < https://stackoverflow.com/questions/4892579/how-to-convert-a-char-to-binary >.
