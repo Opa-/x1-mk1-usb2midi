@@ -1,5 +1,8 @@
+use std::error::Error;
+use std::io::Write;
 use std::sync::mpsc;
 use std::thread;
+use midir::MidiOutput;
 
 use rusb::{Context, Device, HotplugBuilder, Registration, UsbContext};
 
@@ -7,14 +10,12 @@ use crate::kontrol_x1mk1::X1mk1;
 use crate::usb_hotplug::HotPlugHandler;
 use crate::utils::get_serial_number;
 
-mod usb_hotplug;
 mod kontrol_x1mk1;
+mod usb_hotplug;
 mod utils;
-
 
 const USB_ID_VENDOR: u16 = 0x17cc;
 const USB_ID_PRODUCT: u16 = 0x2305;
-
 
 fn main() -> rusb::Result<()> {
     if rusb::has_hotplug() {
@@ -29,25 +30,25 @@ fn main() -> rusb::Result<()> {
                 .register(&context, Box::new(HotPlugHandler { sender: tx }))?,
         );
 
-        thread::spawn(move || {
-            loop {
-                let device = rx.recv().unwrap();
-                let desc = device.device_descriptor().unwrap();
-                let handle = device.open().unwrap();
-                let serial_number = get_serial_number(&device).trim().to_uppercase();
-                thread::spawn(move || {
-                    let mut x1mk1 = X1mk1 { device, handle, serial_number };
-                    loop {
-                        match x1mk1.read() {
-                            Ok(x) => x,
-                            Err(e) => {
-                                eprintln!("Error reading from device: {:?}", e);
-                                break;
-                            }
-                        };
-                    }
-                });
-            }
+
+        thread::spawn(move || loop {
+            let device = rx.recv().unwrap();
+            let desc = device.device_descriptor().unwrap();
+            let handle = device.open().unwrap();
+            let serial_number = get_serial_number(&device).trim().to_uppercase();
+            thread::spawn(move || {
+                let midi_out = MidiOutput::new("MIDI Kontrol X1 Mk1").unwrap();
+                let mut x1mk1 = X1mk1::new(device, handle, serial_number, midi_out);
+                loop {
+                    match x1mk1.read() {
+                        Ok(x) => x,
+                        Err(e) => {
+                            eprintln!("Error reading from device: {:?}", e);
+                            break;
+                        }
+                    };
+                }
+            });
         });
 
         loop {
