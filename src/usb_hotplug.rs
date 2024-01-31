@@ -2,9 +2,6 @@ use std::sync::mpsc;
 
 use rusb::{Device, UsbContext};
 
-const USB_ID_VENDOR: u16 = 0x17cc;
-const USB_ID_PRODUCT: u16 = 0x2305;
-
 pub struct HotPlugHandler<T: UsbContext> {
     pub sender: mpsc::Sender<Device<T>>,
 }
@@ -13,21 +10,20 @@ impl<T: UsbContext> rusb::Hotplug<T> for HotPlugHandler<T> {
     fn device_arrived(&mut self, device: Device<T>) {
         match device.device_descriptor() {
             Ok(descriptor) => {
-                if descriptor.vendor_id() == USB_ID_VENDOR && descriptor.product_id() == USB_ID_PRODUCT {
-                    self.sender.send(device).unwrap();
-                }
+                println!("🟢 Device arrived {:?}", device);
+                self.sender.send(device).unwrap();
             }
-            Err(_) => todo!(),
+            Err(err) => eprintln!("Error getting device descriptor: {:?}", err),
         };
     }
 
     fn device_left(&mut self, device: Device<T>) {
-        println!("device left {:?}", device);
+        println!("🟠 Device left {:?}", device);
     }
 }
 
 impl<T: UsbContext> Drop for HotPlugHandler<T> {
     fn drop(&mut self) {
-        println!("HotPlugHandler dropped");
+        println!("🔴 HotPlugHandler dropped");
     }
 }
