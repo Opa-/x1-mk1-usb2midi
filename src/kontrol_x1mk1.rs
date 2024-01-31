@@ -33,20 +33,25 @@ impl<T: UsbContext> X1mk1<T> {
     fn read_endpoint(&mut self,
                      endpoint: &Endpoint,
     ) -> rusb::Result<()> {
-        let mut buf = [0; 24];
         self.configure_endpoint(&endpoint)?;
+
         let timeout = Duration::from_millis(50);
+        let mut buf = [0; 24];
         loop {
             match self.handle.read_bulk(endpoint.address, &mut buf, timeout) {
                 Ok(len) => {
                     println!(" - {}: {:?}", self.serial_number, buf);
                 }
                 Err(e) => {
-                    continue;
+                    if e == rusb::Error::Timeout {
+                        // Weird timeout occurring when all knobs are at 0 position and no button is pressed.
+                        // We do not want to break because there's no need to call configure_endpoint again.
+                        continue;
+                    }
+                    return Err(e);
                 }
             }
         }
-        Ok(())
     }
 
 
