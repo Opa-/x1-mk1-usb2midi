@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::Write;
+use std::thread::sleep;
 use std::time::Duration;
 
 use midir::{MidiOutput, MidiOutputConnection};
@@ -15,6 +16,12 @@ pub struct X1mk1<T: UsbContext> {
     pub handle: DeviceHandle<T>,
     pub serial_number: String,
     midi_conn_out: MidiOutputConnection,
+    state_current: X1mk1State,
+    state_before: X1mk1State,
+}
+
+#[derive(Clone)]
+struct X1mk1State {
     button: [[bool; 4]; 11],
     knob: [[[char; 2]; 2]; 6],
 }
@@ -30,13 +37,18 @@ impl<T: UsbContext> X1mk1<T> {
     pub fn new(device: Device<T>, handle: DeviceHandle<T>, serial_number: String, midi_out: MidiOutput) -> Self {
         let mut midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
 
+        let state = X1mk1State {
+            button: [[false; 4]; 11],
+            knob: [[['\0'; 2]; 2]; 6],
+        };
+
         Self {
             device,
             handle,
             serial_number,
             midi_conn_out,
-            button: [[false; 4]; 11],
-            knob: [[['\0'; 2]; 2]; 6],
+            state_current: state.clone(),
+            state_before: state.clone(),
         }
     }
 
@@ -60,12 +72,13 @@ impl<T: UsbContext> X1mk1<T> {
         loop {
             match self.handle.read_bulk(endpoint.address, &mut buf, timeout) {
                 Ok(len) => {
-                    println!(" - {}: {:?}", self.serial_number, buf);
-                    println!("{}", self);
+                    // println!(" - {}: {:?}", self.serial_number, buf);
+                    // println!("{:?}", self);
                     self.write_state(buf);
-                    if self.button[10][0] == true {
-                        self.play_note(1);
-                    }
+                    self.midi_toggle();
+                    self.midi_hold();
+                    self.midi_knobs();
+                    self.state_before = self.state_current.clone();
                 }
                 Err(e) => {
                     if e == rusb::Error::Timeout {
@@ -93,6 +106,25 @@ impl<T: UsbContext> X1mk1<T> {
         let _ = self.midi_conn_out.send(&[NOTE_ON_MSG, note, 0x90]);
     }
 
+    fn midi_toggle(&mut self) {
+        // Have to compare to old state for toggle buttons such as "Play/Pause"
+        if !self.state_before.button[10][0] && self.state_current.button[10][0] {
+            let _ = self.midi_conn_out.send(&[0xB0, 0x00, 127]);
+        }
+    }
+
+    fn midi_hold(&mut self) {
+        if self.state_current.button[8][0] {
+            let _ = self.midi_conn_out.send(&[0xB0, 0x02, 127]);
+        } else {
+            let _ = self.midi_conn_out.send(&[0xB0, 0x02, 0]);
+        }
+    }
+
+    fn midi_knobs(&mut self) {
+        self.midi_conn_out.send(&[0xB0, 0x01, knob_to_midi(self.state_current.knob[0][0]) as u8]);
+    }
+
     fn write_state(&mut self, buf: [u8; 24]) {
         let mut binbyte: [[bool; 8]; 5] = [[false; 8]; 5];
 
@@ -102,42 +134,42 @@ impl<T: UsbContext> X1mk1<T> {
         hex2bool(buf[4], &mut binbyte[3]);
         hex2bool(buf[5], &mut binbyte[4]);
 
-        self.button[0][0] = binbyte[3][4];
-        self.button[0][1] = binbyte[4][0];
-        self.button[1][0] = binbyte[3][5];
-        self.button[1][1] = binbyte[4][1];
-        self.button[2][0] = binbyte[3][6];
-        self.button[2][1] = binbyte[4][2];
-        self.button[3][0] = binbyte[3][7];
-        self.button[3][1] = binbyte[4][3];
+        self.state_current.button[0][0] = binbyte[3][4];
+        self.state_current.button[0][1] = binbyte[4][0];
+        self.state_current.button[1][0] = binbyte[3][5];
+        self.state_current.button[1][1] = binbyte[4][1];
+        self.state_current.button[2][0] = binbyte[3][6];
+        self.state_current.button[2][1] = binbyte[4][2];
+        self.state_current.button[3][0] = binbyte[3][7];
+        self.state_current.button[3][1] = binbyte[4][3];
 
-        self.button[4][0] = binbyte[3][0];
-        self.button[4][1] = binbyte[4][4];
-        self.button[4][2] = binbyte[3][1];
-        self.button[5][0] = binbyte[1][1];
-        self.button[5][1] = binbyte[1][0];
-        self.button[5][2] = binbyte[4][6];
-        self.button[5][3] = binbyte[4][5];
-        self.button[6][0] = binbyte[3][2];
-        self.button[6][1] = binbyte[4][7];
-        self.button[6][2] = binbyte[3][3];
+        self.state_current.button[4][0] = binbyte[3][0];
+        self.state_current.button[4][1] = binbyte[4][4];
+        self.state_current.button[4][2] = binbyte[3][1];
+        self.state_current.button[5][0] = binbyte[1][1];
+        self.state_current.button[5][1] = binbyte[1][0];
+        self.state_current.button[5][2] = binbyte[4][6];
+        self.state_current.button[5][3] = binbyte[4][5];
+        self.state_current.button[6][0] = binbyte[3][2];
+        self.state_current.button[6][1] = binbyte[4][7];
+        self.state_current.button[6][2] = binbyte[3][3];
 
-        self.button[7][0] = binbyte[2][4];
-        self.button[7][1] = binbyte[0][3];
-        self.button[7][2] = binbyte[1][4];
-        self.button[7][3] = binbyte[2][3];
-        self.button[8][0] = binbyte[0][2];
-        self.button[8][1] = binbyte[2][5];
-        self.button[8][2] = binbyte[2][2];
-        self.button[8][3] = binbyte[1][5];
-        self.button[9][0] = binbyte[0][1];
-        self.button[9][1] = binbyte[2][6];
-        self.button[9][2] = binbyte[2][1];
-        self.button[9][3] = binbyte[1][6];
-        self.button[10][0] = binbyte[0][0];
-        self.button[10][1] = binbyte[2][7];
-        self.button[10][2] = binbyte[2][0];
-        self.button[10][3] = binbyte[1][7];
+        self.state_current.button[7][0] = binbyte[2][4];
+        self.state_current.button[7][1] = binbyte[0][3];
+        self.state_current.button[7][2] = binbyte[1][4];
+        self.state_current.button[7][3] = binbyte[2][3];
+        self.state_current.button[8][0] = binbyte[0][2];
+        self.state_current.button[8][1] = binbyte[2][5];
+        self.state_current.button[8][2] = binbyte[2][2];
+        self.state_current.button[8][3] = binbyte[1][5];
+        self.state_current.button[9][0] = binbyte[0][1];
+        self.state_current.button[9][1] = binbyte[2][6];
+        self.state_current.button[9][2] = binbyte[2][1];
+        self.state_current.button[9][3] = binbyte[1][6];
+        self.state_current.button[10][0] = binbyte[0][0];
+        self.state_current.button[10][1] = binbyte[2][7];
+        self.state_current.button[10][2] = binbyte[2][0];
+        self.state_current.button[10][3] = binbyte[1][7];
 
         self.set_knob_with_char(0, 0, buf[16], buf[17]);
         self.set_knob_with_char(0, 1, buf[12], buf[13]);
@@ -156,8 +188,8 @@ impl<T: UsbContext> X1mk1<T> {
 
     fn set_knob_with_char(&mut self, m: usize, n: usize, c1: u8, c2: u8) {
         // Little endian.
-        self.knob[m][n][0] = char::from(c1);
-        self.knob[m][n][1] = char::from(c2);
+        self.state_current.knob[m][n][0] = char::from(c1);
+        self.state_current.knob[m][n][1] = char::from(c2);
     }
 
     fn set_encoder_with_char(&mut self, m: usize, n: usize, c: u8, pos: char) {
@@ -166,34 +198,34 @@ impl<T: UsbContext> X1mk1<T> {
 
         match pos {
             's' => {
-                self.knob[m][n][0] = char::from(binnum[0] + binnum[1] * 2 + binnum[2] * 4 + binnum[3] * 8);
+                self.state_current.knob[m][n][0] = char::from(binnum[0] + binnum[1] * 2 + binnum[2] * 4 + binnum[3] * 8);
             }
             'e' => {
-                self.knob[m][n][0] = char::from(binnum[4] + binnum[5] * 2 + binnum[6] * 4 + binnum[7] * 8);
+                self.state_current.knob[m][n][0] = char::from(binnum[4] + binnum[5] * 2 + binnum[6] * 4 + binnum[7] * 8);
             }
             _ => {}
         }
     }
 }
 
-impl<T: UsbContext> fmt::Display for X1mk1<T> {
+impl<T: UsbContext> fmt::Debug for X1mk1<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "=================\n");
-        write!(f, "{} {} {} {}\n", self.button[0][0], knob_to_midi(self.knob[0][0]), knob_to_midi(self.knob[0][1]), self.button[0][1]);
-        write!(f, "{} {} {} {}\n", self.button[1][0], knob_to_midi(self.knob[1][0]), knob_to_midi(self.knob[1][1]), self.button[1][1]);
-        write!(f, "{} {} {} {}\n", self.button[2][0], knob_to_midi(self.knob[2][0]), knob_to_midi(self.knob[2][1]), self.button[2][1]);
-        write!(f, "{} {} {} {}\n", self.button[3][0], knob_to_midi(self.knob[3][0]), knob_to_midi(self.knob[3][1]), self.button[3][1]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[0][0], knob_to_midi(self.state_current.knob[0][0]), knob_to_midi(self.state_current.knob[0][1]), self.state_current.button[0][1]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[1][0], knob_to_midi(self.state_current.knob[1][0]), knob_to_midi(self.state_current.knob[1][1]), self.state_current.button[1][1]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[2][0], knob_to_midi(self.state_current.knob[2][0]), knob_to_midi(self.state_current.knob[2][1]), self.state_current.button[2][1]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[3][0], knob_to_midi(self.state_current.knob[3][0]), knob_to_midi(self.state_current.knob[3][1]), self.state_current.button[3][1]);
         write!(f, "\n");
-        write!(f, "{} {}\n", knob_to_midi(self.knob[4][0]), knob_to_midi(self.knob[4][1]));
-        write!(f, "{} {} {}\n", self.button[4][0], self.button[4][1], self.button[4][2]);
-        write!(f, "{} {} {} {}\n", self.button[5][0], self.button[5][1], self.button[5][2], self.button[5][3]);
-        write!(f, "{} {}\n", knob_to_midi(self.knob[5][0]), knob_to_midi(self.knob[5][1]));
-        write!(f, "{} {} {}\n", self.button[6][0], self.button[6][1], self.button[6][2]);
+        write!(f, "{} {}\n", knob_to_midi(self.state_current.knob[4][0]), knob_to_midi(self.state_current.knob[4][1]));
+        write!(f, "{} {} {}\n", self.state_current.button[4][0], self.state_current.button[4][1], self.state_current.button[4][2]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[5][0], self.state_current.button[5][1], self.state_current.button[5][2], self.state_current.button[5][3]);
+        write!(f, "{} {}\n", knob_to_midi(self.state_current.knob[5][0]), knob_to_midi(self.state_current.knob[5][1]));
+        write!(f, "{} {} {}\n", self.state_current.button[6][0], self.state_current.button[6][1], self.state_current.button[6][2]);
         write!(f, "\n");
-        write!(f, "{} {} {} {}\n", self.button[7][0], self.button[7][1], self.button[7][2], self.button[7][3]);
-        write!(f, "{} {} {} {}\n", self.button[8][0], self.button[8][1], self.button[8][2], self.button[8][3]);
-        write!(f, "{} {} {} {}\n", self.button[9][0], self.button[9][1], self.button[9][2], self.button[9][3]);
-        write!(f, "{} {} {} {}\n", self.button[10][0], self.button[10][1], self.button[10][2], self.button[10][3]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[7][0], self.state_current.button[7][1], self.state_current.button[7][2], self.state_current.button[7][3]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[8][0], self.state_current.button[8][1], self.state_current.button[8][2], self.state_current.button[8][3]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[9][0], self.state_current.button[9][1], self.state_current.button[9][2], self.state_current.button[9][3]);
+        write!(f, "{} {} {} {}\n", self.state_current.button[10][0], self.state_current.button[10][1], self.state_current.button[10][2], self.state_current.button[10][3]);
         write!(f, "=================");
         Ok(())
     }
