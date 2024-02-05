@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 midir = "0.9.1"
 rusb = "0.9"
+serde = { version = "1.0.196", features = ["derive"] }
+serde_yaml = "0.9.31"
