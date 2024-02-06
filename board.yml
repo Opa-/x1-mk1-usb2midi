@@ -1,72 +1,81 @@
 buttons:
+  # SPECIALS
+  - name: "SHIFT"
+    type: "Hold"
+    read_i: 4
+    read_j: 4
+    write_idx: 29
+    midi_ctrl_ch: 8
+  - name: "HOTCUE"
+    type: "Toggle"
+    read_i: 4
+    read_j: 7
+    write_idx: 31
+    midi_ctrl_ch: 8
   # EFFECTS
   # FX1
   - name: "FX1_BUTTON_PLAY"
     type: "Toggle"
     read_i: 3
     read_j: 4
-    write_idx: 1
+    write_idx: 8
     midi_ctrl_ch: 8
   - name: "FX1_BUTTON_1"
     type: "Toggle"
     read_i: 3
     read_j: 5
-    write_idx: 1
+    write_idx: 7
     midi_ctrl_ch: 10
   - name: "FX1_BUTTON_2"
     type: "Toggle"
     read_i: 3
     read_j: 6
-    write_idx: 1
+    write_idx: 6
     midi_ctrl_ch: 12
   - name: "FX1_BUTTON_3"
     type: "Toggle"
     read_i: 3
     read_j: 7
-    write_idx: 1
+    write_idx: 5
     midi_ctrl_ch: 14
   - name: "FX1_KNOB_DRY"
     type: "Knob"
     read_i: 16
     read_j: 17
-    write_idx: 1
     midi_ctrl_ch: 0
   - name: "FX1_KNOB_1"
     type: "Knob"
     read_i: 20
     read_j: 21
-    write_idx: 1
     midi_ctrl_ch: 2
   - name: "FX1_KNOB_2"
     type: "Knob"
     read_i: 22
     read_j: 23
-    write_idx: 1
     midi_ctrl_ch: 4
   - name: "FX1_KNOB_3"
     type: "Knob"
     read_i: 18
     read_j: 19
-    write_idx: 1
     midi_ctrl_ch: 6
   # FX2
   - name: "FX2_BUTTON_PLAY"
     type: "Toggle"
     read_i: 4
     read_j: 0
-    write_idx: 1
+    write_idx: 4
     midi_ctrl_ch: 9
   - name: "FX2_BUTTON_1"
     type: "Toggle"
     read_i: 4
     read_j: 1
-    write_idx: 1
+    write_idx: 3
     midi_ctrl_ch: 11
   - name: "FX2_BUTTON_2"
     type: "Toggle"
     read_i: 4
     read_j: 2
-    write_idx: 1
+    write_idx: 2
     midi_ctrl_ch: 13
   - name: "FX2_BUTTON_3"
     type: "Toggle"
@@ -78,25 +87,21 @@ buttons:
     type: "Knob"
     read_i: 12
     read_j: 13
-    write_idx: 1
     midi_ctrl_ch: 1
   - name: "FX2_KNOB_1"
     type: "Knob"
     read_i: 10
     read_j: 11
-    write_idx: 1
     midi_ctrl_ch: 3
   - name: "FX2_KNOB_2"
     type: "Knob"
     read_i: 8
     read_j: 9
-    write_idx: 1
     midi_ctrl_ch: 5
   - name: "FX2_KNOB_3"
     type: "Knob"
     read_i: 14
     read_j: 15
-    write_idx: 1
     midi_ctrl_ch: 7
   # DECKS
   # DECK A
@@ -115,13 +120,13 @@ buttons:
     type: "Toggle"
     read_i: 1
     read_j: 1
-    write_idx: 1
+    write_idx: 25
     midi_ctrl_ch: 20
   - name: "DECK_A_BUTTON_FX2"
     type: "Toggle"
     read_i: 1
     read_j: 0
-    write_idx: 1
+    write_idx: 26
     midi_ctrl_ch: 22
   - name: "DECK_A_ENCODER_LOOP"
     type: "Encoder"
@@ -138,49 +143,49 @@ buttons:
     type: "Toggle"
     read_i: 2
     read_j: 4
-    write_idx: 1
+    write_idx: 18
     midi_ctrl_ch: 28
   - name: "DECK_A_BUTTON_OUT"
     type: "Toggle"
     read_i: 0
     read_j: 3
-    write_idx: 1
+    write_idx: 17
     midi_ctrl_ch: 30
   - name: "DECK_A_BUTTON_BEAT_LEFT"
     type: "Hold"
     read_i: 0
     read_j: 2
-    write_idx: 1
+    write_idx: 20
     midi_ctrl_ch: 32
   - name: "DECK_A_BUTTON_BEAT_RIGHT"
     type: "Hold"
     read_i: 2
     read_j: 5
-    write_idx: 1
+    write_idx: 19
     midi_ctrl_ch: 34
   - name: "DECK_A_BUTTON_CUE"
     type: "Toggle"
     read_i: 0
     read_j: 1
-    write_idx: 1
+    write_idx: 22
     midi_ctrl_ch: 36
   - name: "DECK_A_BUTTON_CUP"
     type: "Toggle"
     read_i: 2
     read_j: 6
-    write_idx: 1
+    write_idx: 21
     midi_ctrl_ch: 38
   - name: "DECK_A_BUTTON_PLAY"
     type: "Toggle"
     read_i: 0
     read_j: 0
-    write_idx: 1
+    write_idx: 24
     midi_ctrl_ch: 40
   - name: "DECK_A_BUTTON_SYNC"
     type: "Toggle"
     read_i: 2
     read_j: 7
-    write_idx: 1
+    write_idx: 23
     midi_ctrl_ch: 42
   # DECK B
   - name: "DECK_B_ENCODER_BROWSE"
@@ -198,13 +203,13 @@ buttons:
     type: "Toggle"
     read_i: 4
     read_j: 6
-    write_idx: 1
+    write_idx: 27
     midi_ctrl_ch: 21
   - name: "DECK_B_BUTTON_FX2"
     type: "Toggle"
     read_i: 4
     read_j: 5
-    write_idx: 1
+    write_idx: 28
     midi_ctrl_ch: 23
   - name: "DECK_B_ENCODER_LOOP"
     type: "Encoder"
@@ -221,47 +226,47 @@ buttons:
     type: "Toggle"
     read_i: 1
     read_j: 4
-    write_idx: 1
+    write_idx: 16
     midi_ctrl_ch: 29
   - name: "DECK_B_BUTTON_OUT"
     type: "Toggle"
     read_i: 2
     read_j: 3
-    write_idx: 1
+    write_idx: 15
     midi_ctrl_ch: 31
   - name: "DECK_B_BUTTON_BEAT_LEFT"
     type: "Hold"
     read_i: 2
     read_j: 2
-    write_idx: 1
+    write_idx: 14
     midi_ctrl_ch: 33
   - name: "DECK_B_BUTTON_BEAT_RIGHT"
     type: "Hold"
     read_i: 1
     read_j: 5
-    write_idx: 1
+    write_idx: 13
     midi_ctrl_ch: 35
   - name: "DECK_B_BUTTON_CUE"
     type: "Toggle"
     read_i: 2
     read_j: 1
-    write_idx: 1
+    write_idx: 12
     midi_ctrl_ch: 37
   - name: "DECK_B_BUTTON_CUP"
     type: "Toggle"
     read_i: 1
     read_j: 6
-    write_idx: 1
+    write_idx: 11
     midi_ctrl_ch: 39
   - name: "DECK_B_BUTTON_PLAY"
     type: "Toggle"
     read_i: 2
     read_j: 0
-    write_idx: 1
+    write_idx: 10
     midi_ctrl_ch: 41
   - name: "DECK_B_BUTTON_SYNC"
     type: "Toggle"
     read_i: 1
     read_j: 7
-    write_idx: 1
+    write_idx: 9
     midi_ctrl_ch: 43

@@ -14,7 +14,6 @@ pub struct Knob {
     pub prev: u8,
     pub read_i: u8,
     pub read_j: u8,
-    pub write_idx: u8,
 }
 
 pub struct Encoder {
@@ -66,7 +65,6 @@ impl X1mk1Board {
                         prev: 0,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap(),
                     };
                     ButtonType::Knob(knob)
                 }

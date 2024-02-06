@@ -11,6 +11,8 @@ use crate::x1_board::{ButtonType, X1mk1Board};
 const USB_WRITE_FD: u8 = 0x01;
 const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
+const LED_DIM: u8 = 0x05;
+const LED_BRIGHT: u8 = 0x7F;
 const MIDI_MSG_FIRST_BYTE: u8 = 0xB0;
 
 pub struct X1mk1<T: UsbContext> {
@@ -19,6 +21,10 @@ pub struct X1mk1<T: UsbContext> {
     pub serial_number: String,
     midi_conn_out: MidiOutputConnection,
     board: X1mk1Board,
+    usb_buffer: [u8; 24],
+    usb_timeout: Duration,
+    led: [u8; 33],
+    led_updated: bool,
 }
 
 struct Endpoint {
@@ -32,6 +38,10 @@ impl<T: UsbContext> X1mk1<T> {
     pub fn new(device: Device<T>, handle: DeviceHandle<T>, serial_number: String, yaml_config: YamlConfig, midi_out: MidiOutput) -> Self {
         let mut midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
         let board = X1mk1Board::from_yaml(&yaml_config);
+        let mut leds = [0x05; 33];
+        leds[0] = 0x0C;
+        leds[32] = 0;
+        let usb_buffer = [0; 24];
 
         Self {
             device,
@@ -39,6 +49,10 @@ impl<T: UsbContext> X1mk1<T> {
             serial_number,
             midi_conn_out,
             board,
+            usb_buffer,
+            usb_timeout: Duration::from_millis(50),
+            led: leds,
+            led_updated: false,
         }
     }
 
@@ -56,18 +70,17 @@ impl<T: UsbContext> X1mk1<T> {
 
     fn read_endpoint(&mut self, endpoint: &Endpoint) -> rusb::Result<()> {
         self.configure_endpoint(&endpoint)?;
-
-        let timeout = Duration::from_millis(50);
-        let mut buf = [0; 24];
-        let mut unlock_buf = [0; 1]; // Need to read 1 byte after write to unlock the device.
-        // self.write_state(&mut unlock_buf);
-        // self.down(&mut useless_buf);
+        self.update_leds();
         loop {
-            match self.handle.read_bulk(endpoint.address, &mut buf, timeout) {
+            self.led_updated = false;
+            match self.handle.read_bulk(endpoint.address, &mut self.usb_buffer, self.usb_timeout) {
                 Ok(len) => {
-                    // println!(" - {}: {:?}", self.serial_number, buf);
-                    // println!("{:?}", self);
-                    self.read_state(buf);
+                    // println!("read  {:?}", buf);
+                    if len != self.usb_buffer.len() {
+                        // rusb crate consider partially read data as ok but we do not.
+                        continue;
+                    }
+                    self.read_state(self.usb_buffer.clone());
                     // self.midi_toggle();
                     // self.midi_hold();
                     // self.midi_knobs();
@@ -80,6 +93,9 @@ impl<T: UsbContext> X1mk1<T> {
                     }
                     return Err(e);
                 }
+            }
+            if self.led_updated {
+                self.update_leds();
             }
         }
     }
@@ -121,18 +137,35 @@ impl<T: UsbContext> X1mk1<T> {
 
         for (ctrl_name, button_type) in &mut self.board.buttons {
             match button_type {
-                ButtonType::Toggle(ref mut button)
-                | ButtonType::Hold(ref mut button) => {
+                ButtonType::Toggle(ref mut button) => {
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
                     if (button.curr != button.prev) {
-                        println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
+                        // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
+                        if (button.curr) {
+                            let l = self.led[button.write_idx as usize];
+                            self.led[button.write_idx as usize] = if l == LED_DIM { LED_BRIGHT } else { LED_DIM };
+                            self.led_updated = true;
+                        }
+                    }
+                    button.prev = button.curr;
+                }
+                ButtonType::Hold(ref mut button) => {
+                    button.curr = binbyte[button.read_i as usize][button.read_j as usize];
+                    if (button.curr != button.prev) {
+                        // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
+                        if (button.curr) {
+                            self.led[button.write_idx as usize] = LED_BRIGHT;
+                        } else {
+                            self.led[button.write_idx as usize] = LED_DIM;
+                        }
+                        self.led_updated = true;
                     }
                     button.prev = button.curr;
                 }
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
                     if (knob.curr != knob.prev) {
-                        println!("{} changed from {} to {}", ctrl_name, knob.prev, knob.curr);
+                        // println!("{} changed from {} to {}", ctrl_name, knob.prev, knob.curr);
                     }
                     knob.prev = knob.curr;
                 }
@@ -142,14 +175,14 @@ impl<T: UsbContext> X1mk1<T> {
                     match encoder.read_pos {
                         's' => {
                             encoder.curr = binnum[0] + binnum[1] * 2 + binnum[2] * 4 + binnum[3] * 8;
-                        },
+                        }
                         'e' => {
                             encoder.curr = binnum[4] + binnum[5] * 2 + binnum[6] * 4 + binnum[7] * 8;
-                        },
+                        }
                         _ => panic!("Invalid read_pos"),
                     }
                     if (encoder.curr != encoder.prev) {
-                        println!("{} changed from {} to {}", ctrl_name, encoder.prev, encoder.curr);
+                        // println!("{} changed from {} to {}", ctrl_name, encoder.prev, encoder.curr);
                     }
                     encoder.prev = encoder.curr;
                 }
@@ -157,18 +190,13 @@ impl<T: UsbContext> X1mk1<T> {
         }
     }
 
-    fn write_state(&self, unlock_buf: &mut [u8; 1]) {
-        let mut leds = [0x05; 32];
-        leds[0] = 0x0C;
-        leds[31] = 0;
-        self.handle.write_bulk(USB_WRITE_FD, &leds, Duration::from_millis(50)).unwrap();
-        self.handle.read_bulk(USB_UNLOCK_FD, unlock_buf, Duration::from_millis(50)).unwrap();
-    }
-
-    fn down(&self, unlock_buf: &mut [u8; 1]) {
-        let mut leds = [0x00; 32];
-        leds[0] = 0x0C;
-        self.handle.write_bulk(USB_WRITE_FD, &leds, Duration::from_millis(50)).unwrap();
-        self.handle.read_bulk(USB_UNLOCK_FD, unlock_buf, Duration::from_millis(50)).unwrap();
+    fn update_leds(&self) {
+        self.handle.write_bulk(USB_WRITE_FD, &self.led, self.usb_timeout).unwrap();
+        match self.handle.read_bulk(USB_UNLOCK_FD, &mut [0; 1], self.usb_timeout) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Error reading from device: {:?}", e);
+            }
+        };
     }
 }
