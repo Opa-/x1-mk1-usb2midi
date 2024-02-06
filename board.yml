@@ -134,7 +134,7 @@ buttons:
     read_pos: "s"
     midi_ctrl_ch: 26
   - name: "DECK_A_BUTTON_LOOP"
-    type: "Toggle"
+    type: "Hold"
     read_i: 3
     read_j: 2
     write_idx: 1

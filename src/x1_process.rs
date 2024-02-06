@@ -81,9 +81,6 @@ impl<T: UsbContext> X1mk1<T> {
                         continue;
                     }
                     self.read_state(self.usb_buffer.clone());
-                    // self.midi_toggle();
-                    // self.midi_hold();
-                    // self.midi_knobs();
                 }
                 Err(e) => {
                     if e == rusb::Error::Timeout {
@@ -107,25 +104,6 @@ impl<T: UsbContext> X1mk1<T> {
         Ok(())
     }
 
-    // fn midi_toggle(&mut self) {
-    //     // Have to compare to old state for toggle buttons such as "Play/Pause"
-    //     if !self.state_before.button[10][0] && self.state_current.button[10][0] {
-    //         let _ = self.midi_conn_out.send(&[0xB0, 0x00, 127]);
-    //     }
-    // }
-    //
-    // fn midi_hold(&mut self) {
-    //     if self.state_current.button[8][0] {
-    //         let _ = self.midi_conn_out.send(&[0xB0, 0x02, 127]);
-    //     } else {
-    //         let _ = self.midi_conn_out.send(&[0xB0, 0x02, 0]);
-    //     }
-    // }
-    //
-    // fn midi_knobs(&mut self) {
-    //     self.midi_conn_out.send(&[0xB0, 0x01, knob_to_midi(self.state_current.knob[0][0]) as u8]);
-    // }
-
     fn read_state(&mut self, buf: [u8; 24]) {
         let mut binbyte: [[bool; 8]; 5] = [[false; 8]; 5];
 
@@ -145,6 +123,7 @@ impl<T: UsbContext> X1mk1<T> {
                             let l = self.led[button.write_idx as usize];
                             self.led[button.write_idx as usize] = if l == LED_DIM { LED_BRIGHT } else { LED_DIM };
                             self.led_updated = true;
+                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE, button.midi_ctrl_ch, 127]);
                         }
                     }
                     button.prev = button.curr;
@@ -155,8 +134,10 @@ impl<T: UsbContext> X1mk1<T> {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
                             self.led[button.write_idx as usize] = LED_BRIGHT;
+                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE, button.midi_ctrl_ch, 127]);
                         } else {
                             self.led[button.write_idx as usize] = LED_DIM;
+                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE, button.midi_ctrl_ch, 0]);
                         }
                         self.led_updated = true;
                     }
@@ -165,7 +146,7 @@ impl<T: UsbContext> X1mk1<T> {
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
                     if (knob.curr != knob.prev) {
-                        // println!("{} changed from {} to {}", ctrl_name, knob.prev, knob.curr);
+                        let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE, knob.midi_ctrl_ch, knob.curr]);
                     }
                     knob.prev = knob.curr;
                 }
@@ -181,8 +162,17 @@ impl<T: UsbContext> X1mk1<T> {
                         }
                         _ => panic!("Invalid read_pos"),
                     }
-                    if (encoder.curr != encoder.prev) {
-                        // println!("{} changed from {} to {}", ctrl_name, encoder.prev, encoder.curr);
+                    if encoder.curr != encoder.prev {
+                        // Clockwise init
+                        let mut velocity = 1;
+                        if (encoder.prev == 15 && encoder.curr == 0) || (encoder.prev == 0 && encoder.curr == 15) {
+                            // Full rotation special case
+                            velocity = if encoder.prev == 15 { 1 } else { 127 };
+                        } else if encoder.curr < encoder.prev {
+                            // Clockwise
+                            velocity = 127;
+                        }
+                        let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE, encoder.midi_ctrl_ch, velocity]);
                     }
                     encoder.prev = encoder.curr;
                 }

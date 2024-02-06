@@ -7,6 +7,7 @@ pub struct Button {
     pub read_i: u8,
     pub read_j: u8,
     pub write_idx: u8,
+    pub midi_ctrl_ch: u8,
 }
 
 pub struct Knob {
@@ -14,6 +15,7 @@ pub struct Knob {
     pub prev: u8,
     pub read_i: u8,
     pub read_j: u8,
+    pub midi_ctrl_ch: u8,
 }
 
 pub struct Encoder {
@@ -21,6 +23,7 @@ pub struct Encoder {
     pub prev: u8,
     pub read_pos: char,
     pub read_i: u8,
+    pub midi_ctrl_ch: u8,
 }
 
 pub enum ButtonType {
@@ -46,6 +49,7 @@ impl X1mk1Board {
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap(),
+                        midi_ctrl_ch: yaml_button.midi_ctrl_ch,
                     };
                     ButtonType::Toggle(button)
                 }
@@ -56,6 +60,7 @@ impl X1mk1Board {
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap(),
+                        midi_ctrl_ch: yaml_button.midi_ctrl_ch,
                     };
                     ButtonType::Hold(button)
                 }
@@ -65,6 +70,7 @@ impl X1mk1Board {
                         prev: 0,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
+                        midi_ctrl_ch: yaml_button.midi_ctrl_ch,
                     };
                     ButtonType::Knob(knob)
                 }
@@ -74,6 +80,7 @@ impl X1mk1Board {
                         prev: 0,
                         read_pos: yaml_button.read_pos.unwrap(),
                         read_i: yaml_button.read_i,
+                        midi_ctrl_ch: yaml_button.midi_ctrl_ch,
                     };
                     ButtonType::Encoder(encoder)
                 }
