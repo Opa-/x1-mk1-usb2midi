@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use crate::conf::{YamlButtonType, YamlConfig};
 
 pub struct Button {

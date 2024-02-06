@@ -3,14 +3,13 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::sync::mpsc;
 use std::thread;
-use midir::MidiOutput;
 
 use rusb::{Context, Device, HotplugBuilder, Registration, UsbContext};
-use crate::conf::YamlConfig;
 
-use crate::x1_process::X1mk1;
+use crate::conf::YamlConfig;
 use crate::usb_hotplug::HotPlugHandler;
 use crate::utils::get_serial_number;
+use crate::x1_process::X1mk1;
 
 mod x1_process;
 mod usb_hotplug;
@@ -40,13 +39,11 @@ fn main() -> rusb::Result<()> {
 
         thread::spawn(move || loop {
             let device = rx.recv().unwrap();
-            let desc = device.device_descriptor().unwrap();
             let handle = device.open().unwrap();
             let serial_number = get_serial_number(&device).trim().to_uppercase();
             let yaml_config: YamlConfig = serde_yaml::from_str(&yaml_content).expect("Failed to parse YAML");
             thread::spawn(move || {
-                let midi_out = MidiOutput::new("MIDI Kontrol X1 Mk1").unwrap();
-                let mut x1mk1 = X1mk1::new(device, handle, serial_number, yaml_config.clone(), midi_out);
+                let mut x1mk1 = X1mk1::new(device, handle, serial_number, yaml_config.clone());
                 loop {
                     match x1mk1.read() {
                         Ok(x) => x,

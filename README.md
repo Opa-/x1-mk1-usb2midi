@@ -13,7 +13,7 @@ So far, it has been tested with 2 X1 MK1 against Traktor Pro 3.11.0 44 on a Appl
 - [x] No limit on the number of controllers _(MIDI virtual ports name are generated using the serial number of the controller)_
 - [x] Hotplug support
 - [x] Basic LED support
-- [ ] SHIFT button support
+- [x] SHIFT button support
 - [ ] HOTCUE button support
 - [ ] LED to depends on Traktor state
 
