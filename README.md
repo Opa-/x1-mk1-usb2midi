@@ -6,6 +6,8 @@ Note that a nicer way of doing this would be to develop a real driver. But in or
 
 This program aims to :poop: on NI's planned obsolescence and expensive Apple Dev Program by providing a way to use the X1 MK1 as a MIDI controller with the software of your choice.
 
+Thanks to @joherold repository for all the findings [joherold/traktor_x1](https://github.com/joherold/traktor_x1)
+
 > Disclaimer: This is my first Rust program, use at your own risks :)
 
 So far, it has been tested with 2 X1 MK1 against Traktor Pro 3.11.0 44 on a Apple M2 Pro running MacOS Ventura 13.6.4 (22G513).
