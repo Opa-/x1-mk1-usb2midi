@@ -9,7 +9,7 @@ pub struct HotPlugHandler<T: UsbContext> {
 impl<T: UsbContext> rusb::Hotplug<T> for HotPlugHandler<T> {
     fn device_arrived(&mut self, device: Device<T>) {
         match device.device_descriptor() {
-            Ok(descriptor) => {
+            Ok(_) => {
                 println!("🟢 Device arrived {:?}", device);
                 self.sender.send(device).unwrap();
             }

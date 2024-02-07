@@ -14,7 +14,9 @@ const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
 const LED_BRIGHT: u8 = 0x7F;
-const MIDI_MSG_FIRST_BYTE: u8 = 0xB0;
+const MIDI_CHANNEL_0: u8 = 0xB0;
+const MIDI_CHANNEL_LED: u8 = 0xB2;
+const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;
 
 pub struct X1mk1<T: UsbContext> {
     pub device: Device<T>,
@@ -27,8 +29,10 @@ pub struct X1mk1<T: UsbContext> {
     usb_timeout: Duration,
     usb_endpoint: Endpoint,
     led: [u8; 33],
+    led_hotcue: [u8; 16],
     led_updated: bool,
     shift: u8,
+    hotcue: bool,
 }
 
 struct Endpoint {
@@ -44,6 +48,7 @@ impl<T: UsbContext> X1mk1<T> {
         let mut midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
         let board = X1mk1Board::from_yaml(&yaml_config);
         let mut leds = [0x05; 33];
+        let mut led_hotcue = [0x05; 16];
         leds[0] = 0x0C;
         leds[32] = 0;
         let usb_buffer = [0; 24];
@@ -65,8 +70,10 @@ impl<T: UsbContext> X1mk1<T> {
             usb_timeout: Duration::from_millis(50),
             usb_endpoint,
             led: leds,
+            led_hotcue,
             led_updated: false,
             shift: 0,
+            hotcue: false,
         }
     }
 
@@ -90,9 +97,15 @@ impl<T: UsbContext> X1mk1<T> {
         loop {
             match midi_rx.try_recv() {
                 Ok(message) => {
+                    // println!("MIDI message: {:?}", message);
                     let i = message[1] as usize;
-                    if i < 32 && i > 0 {
-                        self.led[i] = message[2];
+                    if i < 32 && i >= 0 {
+                        if message[0] == MIDI_CHANNEL_LED {
+                            self.led[i] = message[2];
+                        } else if message[0] == MIDI_CHANNEL_HOTCUE {
+                            self.led_hotcue[i] = if message[2] != 0 { LED_BRIGHT } else { LED_DIM };
+                        }
+                        self.update_leds();
                     } else {
                         eprintln!("Invalid LED index: {}", i)
                     }
@@ -145,9 +158,12 @@ impl<T: UsbContext> X1mk1<T> {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
                             let l = self.led[button.write_idx as usize];
-                            // self.led[button.write_idx as usize] = if l == LED_DIM { LED_BRIGHT } else { LED_DIM };
-                            // self.led_updated = true;
-                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 127]);
+                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 127]);
+                            if ctrl_name.eq("HOTCUE") {
+                                self.hotcue = !self.hotcue;
+                                self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
+                            }
+                            println!("name: {}, midi_ctrl_ch: {}, led: {}", ctrl_name, button.midi_ctrl_ch, l);
                         }
                     }
                     button.prev = button.curr;
@@ -157,8 +173,7 @@ impl<T: UsbContext> X1mk1<T> {
                     if (button.curr != button.prev) {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
-                            // self.led[button.write_idx as usize] = LED_BRIGHT;
-                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 127]);
+                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 127]);
                             if ctrl_name.eq("SHIFT") {
                                 self.shift = 1;
                             }
@@ -167,7 +182,7 @@ impl<T: UsbContext> X1mk1<T> {
                             if ctrl_name.eq("SHIFT") {
                                 self.shift = 0;
                             }
-                            let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 0]);
+                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 0]);
                         }
                         // self.led_updated = true;
                     }
@@ -176,7 +191,7 @@ impl<T: UsbContext> X1mk1<T> {
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
                     if (knob.curr != knob.prev) {
-                        let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, knob.midi_ctrl_ch, knob.curr]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, knob.midi_ctrl_ch, knob.curr]);
                     }
                     knob.prev = knob.curr;
                 }
@@ -202,7 +217,7 @@ impl<T: UsbContext> X1mk1<T> {
                             // Clockwise
                             velocity = 127;
                         }
-                        let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, encoder.midi_ctrl_ch, velocity]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, encoder.midi_ctrl_ch, velocity]);
                     }
                     encoder.prev = encoder.curr;
                 }
@@ -211,7 +226,14 @@ impl<T: UsbContext> X1mk1<T> {
     }
 
     fn update_leds(&self) {
-        self.handle.write_bulk(USB_WRITE_FD, &self.led, self.usb_timeout).unwrap();
+        let mut led = self.led.clone();
+        if self.hotcue {
+            for i in 9..25 {
+                led[i] = self.led_hotcue[i - 9];
+            }
+        }
+        // println!("Updating LEDs: {:?} {:?}", led, self.led_hotcue);
+        self.handle.write_bulk(USB_WRITE_FD, &led, self.usb_timeout).unwrap();
         match self.handle.read_bulk(USB_UNLOCK_FD, &mut [0; 1], self.usb_timeout) {
             Ok(_) => {}
             Err(e) => {
