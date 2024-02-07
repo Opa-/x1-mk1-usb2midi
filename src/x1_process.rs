@@ -1,7 +1,8 @@
+use std::sync::mpsc;
 use std::time::Duration;
 
-use midir::{MidiOutput, MidiOutputConnection};
-use midir::os::unix::VirtualOutput;
+use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
+use midir::os::unix::{VirtualInput, VirtualOutput};
 use rusb::{Device, DeviceHandle, UsbContext};
 
 use crate::conf::YamlConfig;
@@ -20,7 +21,7 @@ pub struct X1mk1<T: UsbContext> {
     pub handle: DeviceHandle<T>,
     pub serial_number: String,
     midi_conn_out: MidiOutputConnection,
-    // midi_conn_in: Option<MidiInputConnection<T>>,
+    midi_conn_in: Option<MidiInputConnection<()>>,
     board: X1mk1Board,
     usb_buffer: [u8; 24],
     usb_timeout: Duration,
@@ -58,7 +59,7 @@ impl<T: UsbContext> X1mk1<T> {
             handle,
             serial_number,
             midi_conn_out,
-            // midi_conn_in: None,
+            midi_conn_in: None,
             board,
             usb_buffer,
             usb_timeout: Duration::from_millis(50),
@@ -69,22 +70,35 @@ impl<T: UsbContext> X1mk1<T> {
         }
     }
 
-    pub(crate) fn init(&mut self) {
-        // let midi_in = MidiInput::new("MIDI Kontrol X1 Mk1").unwrap();
-        // let mut midi_conn_in = midi_in.create_virtual(self.serial_number.as_str(), self.midi_in, ()).unwrap();
-        // self.midi_conn_in = Some(midi_conn_in);
-    }
-
-    fn midi_in(&self, stamp: u64, message: &[u8]) {
-        println!("MIDI in: {:?} {:?}", stamp, message);
+    pub(crate) fn init(&mut self, sender: mpsc::Sender<Vec<u8>>) {
+        let midi_in = MidiInput::new("MIDI Kontrol X1 Mk1").unwrap();
+        let mut midi_conn_in = midi_in.create_virtual(
+            self.serial_number.as_str(),
+            move |stamp, message, _| {
+                sender.send(message.to_vec()).unwrap();
+            }, ()).unwrap();
+        self.midi_conn_in = Some(midi_conn_in); // Prevents the connection from being dropped
     }
 
     pub(crate) fn read(&mut self) -> rusb::Result<()> {
         println!("Reading from {}", self.serial_number);
+        let (midi_tx, midi_rx) = mpsc::channel::<Vec<u8>>();
+
+        self.init(midi_tx);
         self.configure_endpoint()?;
         self.update_leds();
         loop {
-            self.led_updated = false;
+            match midi_rx.try_recv() {
+                Ok(message) => {
+                    let i = message[1] as usize;
+                    if i < 32 && i > 0 {
+                        self.led[i] = message[2];
+                    } else {
+                        eprintln!("Invalid LED index: {}", i)
+                    }
+                }
+                Err(_) => {}
+            }
             match self.handle.read_bulk(self.usb_endpoint.address, &mut self.usb_buffer, self.usb_timeout) {
                 Ok(len) => {
                     // println!("read  {:?}", buf);
@@ -103,11 +117,8 @@ impl<T: UsbContext> X1mk1<T> {
                     return Err(e);
                 }
             }
-            if self.led_updated {
-                self.update_leds();
-            }
+            self.update_leds();
         }
-        Ok(())
     }
 
     fn configure_endpoint(&mut self) -> rusb::Result<()> {
@@ -134,8 +145,8 @@ impl<T: UsbContext> X1mk1<T> {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
                             let l = self.led[button.write_idx as usize];
-                            self.led[button.write_idx as usize] = if l == LED_DIM { LED_BRIGHT } else { LED_DIM };
-                            self.led_updated = true;
+                            // self.led[button.write_idx as usize] = if l == LED_DIM { LED_BRIGHT } else { LED_DIM };
+                            // self.led_updated = true;
                             let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 127]);
                         }
                     }
@@ -146,7 +157,7 @@ impl<T: UsbContext> X1mk1<T> {
                     if (button.curr != button.prev) {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
-                            self.led[button.write_idx as usize] = LED_BRIGHT;
+                            // self.led[button.write_idx as usize] = LED_BRIGHT;
                             let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 127]);
                             if ctrl_name.eq("SHIFT") {
                                 self.shift = 1;
@@ -158,7 +169,7 @@ impl<T: UsbContext> X1mk1<T> {
                             }
                             let _ = self.midi_conn_out.send(&[MIDI_MSG_FIRST_BYTE + self.shift, button.midi_ctrl_ch, 0]);
                         }
-                        self.led_updated = true;
+                        // self.led_updated = true;
                     }
                     button.prev = button.curr;
                 }
