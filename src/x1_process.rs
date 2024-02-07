@@ -1,5 +1,4 @@
-use std::sync::{Arc, mpsc, Mutex};
-use std::thread;
+use std::sync::mpsc;
 use std::time::Duration;
 
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
@@ -85,26 +84,21 @@ impl<T: UsbContext> X1mk1<T> {
         println!("Reading from {}", self.serial_number);
         let (midi_tx, midi_rx) = mpsc::channel::<Vec<u8>>();
 
-        thread::spawn(move || loop {
-            match midi_rx.recv() {
-                Ok(message) => {
-                    println!("Received message: {:?}", message);
-                    for x in 1..32 {
-                        self.led[x] = 127;
-                    }
-                }
-                Err(err) => {
-                    eprintln!("Error receiving MIDI message: {:?}", err);
-                    break;
-                }
-            }
-        });
-
         self.init(midi_tx);
         self.configure_endpoint()?;
         self.update_leds();
         loop {
-            self.led_updated = false;
+            match midi_rx.try_recv() {
+                Ok(message) => {
+                    let i = message[1] as usize;
+                    if i < 32 && i > 0 {
+                        self.led[i] = message[2];
+                    } else {
+                        eprintln!("Invalid LED index: {}", i)
+                    }
+                }
+                Err(_) => {}
+            }
             match self.handle.read_bulk(self.usb_endpoint.address, &mut self.usb_buffer, self.usb_timeout) {
                 Ok(len) => {
                     // println!("read  {:?}", buf);
@@ -123,11 +117,8 @@ impl<T: UsbContext> X1mk1<T> {
                     return Err(e);
                 }
             }
-            // if self.led_updated {
-                self.update_leds();
-            // }
+            self.update_leds();
         }
-        Ok(())
     }
 
     fn configure_endpoint(&mut self) -> rusb::Result<()> {
