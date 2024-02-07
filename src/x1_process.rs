@@ -199,7 +199,6 @@ impl<T: UsbContext> X1mk1<T> {
                     } else if button.curr {
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 127]);
                     } else {
-                        println!("Hotcue: {} {} -> {}", ctrl_name, button.prev, button.curr);
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 0]);
                     }
                     button.prev = button.curr;
