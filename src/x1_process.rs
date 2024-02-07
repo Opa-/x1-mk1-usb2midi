@@ -28,7 +28,7 @@ pub struct X1mk1<T: UsbContext> {
     usb_buffer: [u8; 24],
     usb_timeout: Duration,
     usb_endpoint: Endpoint,
-    led: [u8; 33],
+    led: [u8; 32],
     led_hotcue: [u8; 16],
     shift: u8,
     hotcue: bool,
@@ -46,10 +46,11 @@ impl<T: UsbContext> X1mk1<T> {
         let midi_out = MidiOutput::new("MIDI Kontrol X1 Mk1").unwrap();
         let mut midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
         let board = X1mk1Board::from_yaml(&yaml_config);
-        let mut leds = [0x05; 33];
+        let mut leds = [0x05; 32];
         let mut led_hotcue = [0x05; 16];
         leds[0] = 0x0C;
-        leds[32] = 0;
+        leds[31] = 0;
+        // leds[32] = 0;
         let usb_buffer = [0; 24];
         let usb_endpoint = Endpoint {
             address: USB_READ_FD,
