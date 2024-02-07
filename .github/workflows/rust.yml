@@ -24,32 +24,10 @@ jobs:
       run: cargo bundle
     - name: Zip artifact for deployment
       run: cd ./target/debug/bundle/osx ; zip X1Mk1usb2midi.zip * -r ; cd -
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./target/debug/bundle/osx/X1Mk1usb2midi.zip
-        asset_name: X1Mk1usb2midi.zip
-        asset_content_type: application/zip
-    - name: Upload Traktor Mapping
-      id: upload-traktor-mapping
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./DecksAB.tsi
-        asset_name: DecksAB.tsi
+        files: |
+          ./target/debug/bundle/osx/X1Mk1usb2midi.zip
+          DecksAB.tsi
