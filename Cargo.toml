@@ -19,4 +19,3 @@ identifier = "io.github.opa-.x1-mk1-usb2midi"
 icon = ["128x128@2x.png"]
 category = "public.app-category.music"
 resources = ["board.yml"]
-#osx_frameworks = ["/opt/homebrew/Cellar/libusb/1.0.27/lib/libusb-1.0.0.dylib"]
