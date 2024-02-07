@@ -18,8 +18,9 @@ So far, it has been tested with 2 X1 MK1 against Traktor Pro 3.11.0 44 on a Appl
 - [x] Hotplug support
 - [x] Basic LED support
 - [x] SHIFT button support
-- [ ] HOTCUE button support
+- [X] HOTCUE button support
 - [X] LED to depends on Traktor state
+- [ ] UI or macOs menu bar integration
 
 ## Requirements
 

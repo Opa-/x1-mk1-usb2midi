@@ -14,7 +14,7 @@ const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
 const LED_BRIGHT: u8 = 0x7F;
-const MIDI_CHANNEL_0: u8 = 0xB0;
+const MIDI_CHANNEL: u8 = 0xB0;
 const MIDI_CHANNEL_LED: u8 = 0xB2;
 const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;
 
@@ -30,7 +30,6 @@ pub struct X1mk1<T: UsbContext> {
     usb_endpoint: Endpoint,
     led: [u8; 33],
     led_hotcue: [u8; 16],
-    led_updated: bool,
     shift: u8,
     hotcue: bool,
 }
@@ -71,7 +70,6 @@ impl<T: UsbContext> X1mk1<T> {
             usb_endpoint,
             led: leds,
             led_hotcue,
-            led_updated: false,
             shift: 0,
             hotcue: false,
         }
@@ -153,45 +151,63 @@ impl<T: UsbContext> X1mk1<T> {
         for (ctrl_name, button_type) in &mut self.board.buttons {
             match button_type {
                 ButtonType::Toggle(ref mut button) => {
+                    if (self.hotcue && button.hotcue_ignore) {
+                        continue;
+                    }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
                     if (button.curr != button.prev) {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if (button.curr) {
                             let l = self.led[button.write_idx as usize];
-                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 127]);
+                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
                             if ctrl_name.eq("HOTCUE") {
                                 self.hotcue = !self.hotcue;
                                 self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
                             }
-                            println!("name: {}, midi_ctrl_ch: {}, led: {}", ctrl_name, button.midi_ctrl_ch, l);
                         }
                     }
                     button.prev = button.curr;
                 }
                 ButtonType::Hold(ref mut button) => {
+                    if (self.hotcue && button.hotcue_ignore) {
+                        continue;
+                    }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
-                    if (button.curr != button.prev) {
-                        // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
-                        if (button.curr) {
-                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 127]);
-                            if ctrl_name.eq("SHIFT") {
-                                self.shift = 1;
-                            }
-                        } else {
-                            self.led[button.write_idx as usize] = LED_DIM;
-                            if ctrl_name.eq("SHIFT") {
-                                self.shift = 0;
-                            }
-                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, button.midi_ctrl_ch, 0]);
+                    if (button.curr == button.prev) {
+                        continue;
+                    } else if (button.curr) {
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
+                        if ctrl_name.eq("SHIFT") {
+                            self.shift = 1;
                         }
-                        // self.led_updated = true;
+                    } else {
+                        self.led[button.write_idx as usize] = LED_DIM;
+                        if ctrl_name.eq("SHIFT") {
+                            self.shift = 0;
+                        }
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 0]);
+                    }
+                    button.prev = button.curr;
+                }
+                ButtonType::Hotcue(ref mut button) => {
+                    if (!self.hotcue) {
+                        continue;
+                    }
+                    button.curr = binbyte[button.read_i as usize][button.read_j as usize];
+                    if (button.curr == button.prev) {
+                        continue;
+                    } else if button.curr {
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 127]);
+                    } else {
+                        println!("Hotcue: {} {} -> {}", ctrl_name, button.prev, button.curr);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 0]);
                     }
                     button.prev = button.curr;
                 }
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
                     if (knob.curr != knob.prev) {
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, knob.midi_ctrl_ch, knob.curr]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, knob.midi_ctrl_ch, knob.curr]);
                     }
                     knob.prev = knob.curr;
                 }
@@ -217,7 +233,7 @@ impl<T: UsbContext> X1mk1<T> {
                             // Clockwise
                             velocity = 127;
                         }
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_0 + self.shift, encoder.midi_ctrl_ch, velocity]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, encoder.midi_ctrl_ch, velocity]);
                     }
                     encoder.prev = encoder.curr;
                 }

@@ -145,48 +145,56 @@ buttons:
     read_j: 4
     write_idx: 18
     midi_ctrl_ch: 28
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_OUT"
     type: "Toggle"
     read_i: 0
     read_j: 3
     write_idx: 17
     midi_ctrl_ch: 30
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_BEAT_LEFT"
     type: "Hold"
     read_i: 0
     read_j: 2
     write_idx: 20
     midi_ctrl_ch: 32
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_BEAT_RIGHT"
     type: "Hold"
     read_i: 2
     read_j: 5
     write_idx: 19
     midi_ctrl_ch: 34
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_CUE"
     type: "Toggle"
     read_i: 0
     read_j: 1
     write_idx: 22
     midi_ctrl_ch: 36
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_CUP"
     type: "Toggle"
     read_i: 2
     read_j: 6
     write_idx: 21
     midi_ctrl_ch: 38
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_PLAY"
     type: "Toggle"
     read_i: 0
     read_j: 0
     write_idx: 24
     midi_ctrl_ch: 40
+    hotcue_ignore: true
   - name: "DECK_A_BUTTON_SYNC"
     type: "Toggle"
     read_i: 2
     read_j: 7
     write_idx: 23
     midi_ctrl_ch: 42
+    hotcue_ignore: true
   # DECK B
   - name: "DECK_B_ENCODER_BROWSE"
     type: "Encoder"
@@ -228,45 +236,134 @@ buttons:
     read_j: 4
     write_idx: 16
     midi_ctrl_ch: 29
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_OUT"
     type: "Toggle"
     read_i: 2
     read_j: 3
     write_idx: 15
     midi_ctrl_ch: 31
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_BEAT_LEFT"
     type: "Hold"
     read_i: 2
     read_j: 2
     write_idx: 14
     midi_ctrl_ch: 33
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_BEAT_RIGHT"
     type: "Hold"
     read_i: 1
     read_j: 5
     write_idx: 13
     midi_ctrl_ch: 35
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_CUE"
     type: "Toggle"
     read_i: 2
     read_j: 1
     write_idx: 12
     midi_ctrl_ch: 37
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_CUP"
     type: "Toggle"
     read_i: 1
     read_j: 6
     write_idx: 11
     midi_ctrl_ch: 39
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_PLAY"
     type: "Toggle"
     read_i: 2
     read_j: 0
     write_idx: 10
     midi_ctrl_ch: 41
+    hotcue_ignore: true
   - name: "DECK_B_BUTTON_SYNC"
     type: "Toggle"
     read_i: 1
     read_j: 7
     write_idx: 9
     midi_ctrl_ch: 43
+    hotcue_ignore: true
+  # HOTCUES
+  - name: "DECK_B_HOTCUE_1"
+    type: "Hotcue"
+    read_i: 1
+    read_j: 4
+    midi_ctrl_ch: 7
+  - name: "DECK_B_HOTCUE_5"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 3
+    midi_ctrl_ch: 6
+  - name: "DECK_B_HOTCUE_2"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 2
+    midi_ctrl_ch: 5
+  - name: "DECK_B_HOTCUE_6"
+    type: "Hotcue"
+    read_i: 1
+    read_j: 5
+    midi_ctrl_ch: 4
+  - name: "DECK_B_HOTCUE_3"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 1
+    midi_ctrl_ch: 3
+  - name: "DECK_B_HOTCUE_7"
+    type: "Hotcue"
+    read_i: 1
+    read_j: 6
+    midi_ctrl_ch: 2
+  - name: "DECK_B_HOTCUE_4"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 0
+    midi_ctrl_ch: 1
+  - name: "DECK_B_HOTCUE_8"
+    type: "Hotcue"
+    read_i: 1
+    read_j: 7
+    midi_ctrl_ch: 0
+  - name: "DECK_A_HOTCUE_1"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 4
+    midi_ctrl_ch: 9
+  - name: "DECK_A_HOTCUE_5"
+    type: "Hotcue"
+    read_i: 0
+    read_j: 3
+    midi_ctrl_ch: 8
+  - name: "DECK_A_HOTCUE_2"
+    type: "Hotcue"
+    read_i: 0
+    read_j: 2
+    midi_ctrl_ch: 11
+  - name: "DECK_A_HOTCUE_6"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 5
+    midi_ctrl_ch: 10
+  - name: "DECK_A_HOTCUE_3"
+    type: "Hotcue"
+    read_i: 0
+    read_j: 1
+    midi_ctrl_ch: 13
+  - name: "DECK_A_HOTCUE_7"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 6
+    midi_ctrl_ch: 12
+  - name: "DECK_A_HOTCUE_4"
+    type: "Hotcue"
+    read_i: 0
+    read_j: 0
+    midi_ctrl_ch: 15
+  - name: "DECK_A_HOTCUE_8"
+    type: "Hotcue"
+    read_i: 2
+    read_j: 7
+    midi_ctrl_ch: 14

@@ -9,6 +9,7 @@ pub struct Button {
     pub read_j: u8,
     pub write_idx: u8,
     pub midi_ctrl_ch: u8,
+    pub hotcue_ignore: bool,
 }
 
 pub struct Knob {
@@ -32,6 +33,7 @@ pub enum ButtonType {
     Hold(Button),
     Knob(Knob),
     Encoder(Encoder),
+    Hotcue(Button)
 }
 
 pub struct X1mk1Board {
@@ -49,8 +51,9 @@ impl X1mk1Board {
                         prev: false,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap(),
+                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
                     };
                     ButtonType::Toggle(button)
                 }
@@ -60,10 +63,23 @@ impl X1mk1Board {
                         prev: false,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap(),
+                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
                     };
                     ButtonType::Hold(button)
+                }
+                YamlButtonType::Hotcue => {
+                    let button = Button {
+                        curr: false,
+                        prev: false,
+                        read_i: yaml_button.read_i,
+                        read_j: yaml_button.read_j.unwrap(),
+                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
+                        midi_ctrl_ch: yaml_button.midi_ctrl_ch,
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
+                    };
+                    ButtonType::Hotcue(button)
                 }
                 YamlButtonType::Knob => {
                     let knob = Knob {

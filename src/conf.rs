@@ -6,6 +6,7 @@ pub enum YamlButtonType {
     Hold,
     Knob,
     Encoder,
+    Hotcue,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -18,6 +19,7 @@ pub struct YamlButton {
     pub read_pos: Option<char>,
     pub write_idx: Option<u8>,
     pub midi_ctrl_ch: u8,
+    pub hotcue_ignore: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
