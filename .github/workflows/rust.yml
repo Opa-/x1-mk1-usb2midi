@@ -1,5 +1,8 @@
 name: Rust
 
+permissions:
+  contents: write
+
 on: push
 
 env:
