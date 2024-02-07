@@ -44,3 +44,12 @@ jobs:
         asset_path: ./target/debug/bundle/osx/X1Mk1usb2midi.zip
         asset_name: X1Mk1usb2midi.zip
         asset_content_type: application/zip
+    - name: Upload Traktor Mapping
+      id: upload-traktor-mapping
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./DecksAB.tsi
+        asset_name: DecksAB.tsi
