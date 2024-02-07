@@ -1,5 +1,7 @@
 # X1 Mk1 USB2MIDI
 
+[![Rust](https://github.com/Opa-/x1-mk1-usb2midi/actions/workflows/rust.yml/badge.svg)](https://github.com/Opa-/x1-mk1-usb2midi/actions/workflows/rust.yml)
+
 Native Instruments discontinued the support for the Traktor Kontrol X1 MK1 since MacOS Catalina [see here](https://support.native-instruments.com/hc/en-us/articles/360014900358-Compatibility-of-Native-Instruments-Products-on-macOS). This means that the controller is not recognized by MacOS nor Traktor anymore and it's not possible to use it as a MIDI controller because Native Instruments doesn't want to develop a proper driver.
 
 Note that a nicer way of doing this would be to develop a real driver. But in order to use Apple's [DriverKit](https://developer.apple.com/documentation/driverkit), you need to enroll for Apple Developer Program for $99 a year. 
