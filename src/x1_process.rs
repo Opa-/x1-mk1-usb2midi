@@ -95,7 +95,6 @@ impl<T: UsbContext> X1mk1<T> {
         loop {
             match midi_rx.try_recv() {
                 Ok(message) => {
-                    // println!("MIDI message: {:?}", message);
                     let i = message[1] as usize;
                     if (0..32).contains(&i) {
                         if message[0] == MIDI_CHANNEL_LED {
@@ -112,7 +111,6 @@ impl<T: UsbContext> X1mk1<T> {
             }
             match self.handle.read_bulk(self.usb_endpoint.address, &mut self.usb_buffer, self.usb_timeout) {
                 Ok(len) => {
-                    // println!("read  {:?}", buf);
                     if len != self.usb_buffer.len() {
                         // rusb crate consider partially read data as ok but we do not.
                         continue;
@@ -156,7 +154,6 @@ impl<T: UsbContext> X1mk1<T> {
                     }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
                     if button.curr != button.prev {
-                        // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
                         if button.curr {
                             let _l = self.led[button.write_idx as usize];
                             let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
@@ -247,7 +244,6 @@ impl<T: UsbContext> X1mk1<T> {
                 led[i] = self.led_hotcue[i - 9];
             }
         }
-        // println!("Updating LEDs: {:?} {:?}", led, self.led_hotcue);
         self.handle.write_bulk(USB_WRITE_FD, &led, self.usb_timeout).unwrap();
         match self.handle.read_bulk(USB_UNLOCK_FD, &mut [0; 1], self.usb_timeout) {
             Ok(_) => {}
