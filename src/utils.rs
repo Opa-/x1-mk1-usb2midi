@@ -27,8 +27,8 @@ pub fn hex2bin(hex: u8, bin: &mut [u8; 8]) {
 
 pub fn knob_to_midi(i: u8, j: u8) -> u8 {
     let combined_value = ((i as u16) << 8) | j as u16;
-    let midi_value = (combined_value as f32 / 0xFFF as f32 * 127.0).round() as u8;
-    return midi_value;
+    
+    (combined_value as f32 / 0xFFF as f32 * 127.0).round() as u8
 }
 
 pub fn get_yaml_file() -> std::fs::File {

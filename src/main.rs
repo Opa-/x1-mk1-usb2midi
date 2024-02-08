@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::error::Error;
-use std::io::{Read, Write};
+
+use std::io::{Read};
 use std::sync::{Arc, mpsc, Mutex};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -33,7 +33,6 @@ fn main() {
     let status_item = RefCell::new(StatusItem::new("🎛️", Menu::new(vec![])));
 
     sync_infinite_event_loop(receiver_menu_bar, move |x1| {
-        println!("Received: {:?}", x1);
         let items = x1
             .iter()
             .map(|(name, connected)| MenuItem::new(format!("{} {}", if *connected { "🟢" } else { "🔴" }, name), None, None))
@@ -65,7 +64,6 @@ fn x1(sender_menu_bar: Sender<HashMap<String, bool>>) -> rusb::Result<()> {
             let sender_menu_bar = sender_menu_bar.clone();
             move || loop {
                 let device = rx.recv().unwrap();
-                println!("{:?}", devices.lock().unwrap());
                 let handle = device.open().unwrap();
                 let serial_number = get_serial_number(&device);
                 let serial_number_clone = serial_number.clone();

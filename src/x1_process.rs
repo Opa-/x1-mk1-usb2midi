@@ -44,13 +44,12 @@ struct Endpoint {
 impl<T: UsbContext> X1mk1<T> {
     pub fn new(device: Device<T>, handle: DeviceHandle<T>, serial_number: String, yaml_config: YamlConfig) -> Self {
         let midi_out = MidiOutput::new("MIDI Kontrol X1 Mk1").unwrap();
-        let mut midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
+        let midi_conn_out = midi_out.create_virtual(serial_number.as_str()).unwrap();
         let board = X1mk1Board::from_yaml(&yaml_config);
         let mut leds = [0x05; 32];
-        let mut led_hotcue = [0x05; 16];
+        let led_hotcue = [0x05; 16];
         leds[0] = 0x0C;
         leds[31] = 0;
-        // leds[32] = 0;
         let usb_buffer = [0; 24];
         let usb_endpoint = Endpoint {
             address: USB_READ_FD,
@@ -78,9 +77,9 @@ impl<T: UsbContext> X1mk1<T> {
 
     pub(crate) fn init(&mut self, sender: mpsc::Sender<Vec<u8>>) {
         let midi_in = MidiInput::new("MIDI Kontrol X1 Mk1").unwrap();
-        let mut midi_conn_in = midi_in.create_virtual(
+        let midi_conn_in = midi_in.create_virtual(
             self.serial_number.as_str(),
-            move |stamp, message, _| {
+            move |_stamp, message, _| {
                 sender.send(message.to_vec()).unwrap();
             }, ()).unwrap();
         self.midi_conn_in = Some(midi_conn_in); // Prevents the connection from being dropped
@@ -98,7 +97,7 @@ impl<T: UsbContext> X1mk1<T> {
                 Ok(message) => {
                     // println!("MIDI message: {:?}", message);
                     let i = message[1] as usize;
-                    if i < 32 && i >= 0 {
+                    if (0..32).contains(&i) {
                         if message[0] == MIDI_CHANNEL_LED {
                             self.led[i] = message[2];
                         } else if message[0] == MIDI_CHANNEL_HOTCUE {
@@ -118,7 +117,7 @@ impl<T: UsbContext> X1mk1<T> {
                         // rusb crate consider partially read data as ok but we do not.
                         continue;
                     }
-                    self.read_state(self.usb_buffer.clone());
+                    self.read_state(self.usb_buffer);
                 }
                 Err(e) => {
                     if e == rusb::Error::Timeout {
@@ -152,14 +151,14 @@ impl<T: UsbContext> X1mk1<T> {
         for (ctrl_name, button_type) in &mut self.board.buttons {
             match button_type {
                 ButtonType::Toggle(ref mut button) => {
-                    if (self.hotcue && button.hotcue_ignore) {
+                    if self.hotcue && button.hotcue_ignore {
                         continue;
                     }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
-                    if (button.curr != button.prev) {
+                    if button.curr != button.prev {
                         // println!("{} changed from {} to {}", ctrl_name, button.prev, button.curr);
-                        if (button.curr) {
-                            let l = self.led[button.write_idx as usize];
+                        if button.curr {
+                            let _l = self.led[button.write_idx as usize];
                             let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
                             if ctrl_name.eq("HOTCUE") {
                                 self.hotcue = !self.hotcue;
@@ -170,13 +169,13 @@ impl<T: UsbContext> X1mk1<T> {
                     button.prev = button.curr;
                 }
                 ButtonType::Hold(ref mut button) => {
-                    if (self.hotcue && button.hotcue_ignore) {
+                    if self.hotcue && button.hotcue_ignore {
                         continue;
                     }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
-                    if (button.curr == button.prev) {
+                    if button.curr == button.prev {
                         continue;
-                    } else if (button.curr) {
+                    } else if button.curr {
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
                         if ctrl_name.eq("SHIFT") {
                             self.shift = 1;
@@ -191,11 +190,11 @@ impl<T: UsbContext> X1mk1<T> {
                     button.prev = button.curr;
                 }
                 ButtonType::Hotcue(ref mut button) => {
-                    if (!self.hotcue) {
+                    if !self.hotcue {
                         continue;
                     }
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
-                    if (button.curr == button.prev) {
+                    if button.curr == button.prev {
                         continue;
                     } else if button.curr {
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 127]);
@@ -206,7 +205,7 @@ impl<T: UsbContext> X1mk1<T> {
                 }
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
-                    if (knob.curr != knob.prev) {
+                    if knob.curr != knob.prev {
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, knob.midi_ctrl_ch, knob.curr]);
                     }
                     knob.prev = knob.curr;
@@ -242,7 +241,7 @@ impl<T: UsbContext> X1mk1<T> {
     }
 
     fn update_leds(&self) {
-        let mut led = self.led.clone();
+        let mut led = self.led;
         if self.hotcue {
             for i in 9..25 {
                 led[i] = self.led_hotcue[i - 9];

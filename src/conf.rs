@@ -26,9 +26,3 @@ pub struct YamlButton {
 pub struct YamlConfig {
     pub buttons: Vec<YamlButton>,
 }
-
-fn read_yaml_conf(path: &str) -> YamlConfig {
-    let conf = std::fs::read_to_string(path).unwrap();
-    let yaml_conf: YamlConfig = serde_yaml::from_str(&conf).unwrap();
-    return yaml_conf;
-}

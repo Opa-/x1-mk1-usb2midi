@@ -51,9 +51,9 @@ impl X1mk1Board {
                         prev: false,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
+                        write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
                     };
                     ButtonType::Toggle(button)
                 }
@@ -63,9 +63,9 @@ impl X1mk1Board {
                         prev: false,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
+                        write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
                     };
                     ButtonType::Hold(button)
                 }
@@ -75,9 +75,9 @@ impl X1mk1Board {
                         prev: false,
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
-                        write_idx: yaml_button.write_idx.unwrap_or_else(|| 0),
+                        write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or_else(|| false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
                     };
                     ButtonType::Hotcue(button)
                 }
