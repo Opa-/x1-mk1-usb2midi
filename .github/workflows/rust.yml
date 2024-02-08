@@ -15,18 +15,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install libusb
-      run: brew install libusb
-    - name: Cargo setup
-      run: cargo install cargo-bundle
+    - name: Build
+      if: !startsWith(github.ref, 'refs/tags/')
+      run: cargo build
     - name: Bundle
+      if: startsWith(github.ref, 'refs/tags/')
       run: ./bundle.sh
-    - name: Zip artifact for deployment
-      run: cd ./target/release/bundle/osx ; zip X1Mk1-usb2midi.zip * -r ; cd -
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ./target/debug/bundle/osx/X1Mk1-usb2midi.zip
+          ./target/release/bundle/osx/X1Mk1-usb2midi.zip
           DecksAB.tsi
