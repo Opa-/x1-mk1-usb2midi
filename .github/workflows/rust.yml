@@ -16,14 +16,17 @@ jobs:
     - name: Build
       if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       run: cargo build
-    - name: Bundle
+    - name: Bundle aarch64
       if: ${{ startsWith(github.ref, 'refs/tags/') }}
-      run: ./bundle.sh
+      run: ./bundle.sh aarch64-apple-darwin
+    - name: Bundle x86_64
+      if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      run: ./bundle x86_64-apple-darwin
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ./target/release/bundle/osx/X1Mk1-usb2midi_aarch64.zip
-          ./target/x86_64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_x86_64.zip
+          ./target/aarch64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_aarch64-apple-darwin.zip
+          ./target/x86_64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_x86_64-apple-darwin.zip
           DecksAB.tsi
