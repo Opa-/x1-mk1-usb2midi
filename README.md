@@ -18,12 +18,18 @@ So far, it has been tested with 2 X1 MK1 against Traktor Pro 3.11.0 44 on a Appl
 
 ## Install (Linux)
 
+This tool can be used to run the X1 MK1 with Linux.
+It has been successfully tested with [Mixxx](https://mixxx.org).
+In Linux, this tool does not have a GUI, yet.
 
+* Clone this repository
+* Make sure you have installed the [libusb](https://libusb.info/) headers which are necessary for the [rusb](https://github.com/a1ien/rusb) crate. On OpenSUSE Tumbleweed the necessary package was `libusb-devel`.
 * Put the following line in a new udev rule, e.g. in `/etc/udev/rules.d/99-x1mk1.rules` so you can access the device without needing to run this as root:
-
 ```
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="17cc", ATTRS{idProduct}=="2305", ACTION=="add", DRIVER=="snd-usb-caiaq", MODE="0666", RUN+="/bin/sh -c 'echo $kernel > /sys/bus/usb/drivers/snd-usb-caiaq/unbind'"
 ```
+* Build and run with `cargo run`
+* Startup Mixxx, it should detect the device, select the X1 mappings (which are not perfectly great yet).
 
 ## Install (macOS)
 
@@ -63,7 +69,7 @@ If you want to do your own mapping, you can simply use the "Learn" feature of Tr
 ## Roadmap
 
 - [ ] Document which MIDI channels and CC are used for each knob/button/encoder
-- [ ] Linux
+- [x] Linux
 - [ ] Windows 11
 - [ ] GUI configuration
 
