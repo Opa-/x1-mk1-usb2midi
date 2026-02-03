@@ -24,7 +24,7 @@ In Linux, this tool does not have a GUI, yet.
 
 * Clone this repository
 * Make sure you have installed the [libusb](https://libusb.info/) headers which are necessary for the [rusb](https://github.com/a1ien/rusb) crate. On OpenSUSE Tumbleweed the necessary package was `libusb-devel`.
-* Put the following line in a new udev rule, e.g. in `/etc/udev/rules.d/99-x1mk1.rules` so you can access the device without needing to run this as root:
+* Put the following line in a new udev rule, e.g. in `/etc/udev/rules.d/99-x1mk1.rules` so you can access the device without needing to run this as root and also to unload the caiaq driver.
 ```
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="17cc", ATTRS{idProduct}=="2305", ACTION=="add", DRIVER=="snd-usb-caiaq", MODE="0666", RUN+="/bin/sh -c 'echo $kernel > /sys/bus/usb/drivers/snd-usb-caiaq/unbind'"
 ```
