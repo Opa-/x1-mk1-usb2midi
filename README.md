@@ -16,21 +16,6 @@ Thanks to @joherold repository for all the findings [joherold/traktor_x1](https:
 
 So far, it has been tested with 2 X1 MK1 against Traktor Pro 3.11.0 44 on a Apple M2 Pro running MacOS Ventura 13.6.4 (22G513).
 
-## Install (Linux)
-
-This tool can be used to run the X1 MK1 with Linux.
-It has been successfully tested with [Mixxx](https://mixxx.org).
-In Linux, this tool does not have a GUI, yet.
-
-* Clone this repository
-* Make sure you have installed the [libusb](https://libusb.info/) headers which are necessary for the [rusb](https://github.com/a1ien/rusb) crate. On OpenSUSE Tumbleweed the necessary package was `libusb-devel`.
-* Put the following line in a new udev rule, e.g. in `/etc/udev/rules.d/99-x1mk1.rules` so you can access the device without needing to run this as root and also to unload the caiaq driver.
-```
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="17cc", ATTRS{idProduct}=="2305", ACTION=="add", DRIVER=="snd-usb-caiaq", MODE="0666", RUN+="/bin/sh -c 'echo $kernel > /sys/bus/usb/drivers/snd-usb-caiaq/unbind'"
-```
-* Build and run with `cargo run`
-* Startup Mixxx, it should detect the device, select the X1 mappings (which are not perfectly great yet).
-
 ## Install (macOS)
 
 Grab the [latest release](https://github.com/Opa-/x1-mk1-usb2midi/releases/latest) and run the App, it should launch in the Dock and you should have an icon in the menu bar as well, listing all currently connected X1 Mk1.
@@ -52,6 +37,22 @@ Here's [a video](https://streamable.com/ziu6pa) if needed for the later step.
 If you want to do your own mapping, you can simply use the "Learn" feature of Traktor and click on the buttons 😉
 
 **🫵 Your feedback is essential to enhance/fix this app. Feel free to report any feedback or any issue you could encounter in the [discussions tab](https://github.com/Opa-/x1-mk1-usb2midi/discussions) or the [issues tab](https://github.com/Opa-/x1-mk1-usb2midi/issues).**
+
+## Install (Linux)
+
+This tool can be used to run the X1 MK1 with Linux.
+It has been successfully tested with [Mixxx](https://mixxx.org).
+In Linux, this tool does not have a GUI, yet.
+
+* Clone this repository
+* Make sure you have installed the [libusb](https://libusb.info/) headers which are necessary for the [rusb](https://github.com/a1ien/rusb) crate. On OpenSUSE Tumbleweed the necessary package was `libusb-devel`.
+* Put the following line in a new udev rule, e.g. in `/etc/udev/rules.d/99-x1mk1.rules` so you can access the device without needing to run this as root and also to unload the caiaq driver.
+```
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="17cc", ATTRS{idProduct}=="2305", ACTION=="add", DRIVER=="snd-usb-caiaq", MODE="0666", RUN+="/bin/sh -c 'echo $kernel > /sys/bus/usb/drivers/snd-usb-caiaq/unbind'"
+```
+* Build and run with `cargo run`
+* Startup Mixxx, it should detect the device, select the X1 mappings (which are not perfectly great yet).
+
 
 ## Known issues
 
