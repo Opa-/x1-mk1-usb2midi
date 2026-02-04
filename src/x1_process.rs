@@ -19,6 +19,7 @@ const MIDI_CHANNEL_LED: u8 = 0xB2;
 const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;
 
 pub struct X1mk1<T: UsbContext> {
+    #[allow(dead_code)]
     pub device: Device<T>,
     pub handle: DeviceHandle<T>,
     pub serial_number: String,

@@ -1,4 +1,6 @@
+#[cfg(target_os = "macos")]
 use std::cell::RefCell;
+
 use std::collections::HashMap;
 
 use std::io::{Read};
@@ -7,6 +9,8 @@ use std::sync::mpsc::Sender;
 use std::thread;
 
 use rusb::{Context, Device, HotplugBuilder, Registration, UsbContext};
+
+#[cfg(target_os = "macos")]
 use system_status_bar_macos::{Menu, MenuItem, StatusItem, sync_infinite_event_loop};
 
 use crate::conf::YamlConfig;
@@ -24,21 +28,31 @@ const USB_ID_VENDOR: u16 = 0x17cc;
 const USB_ID_PRODUCT: u16 = 0x2305;
 
 fn main() {
+    #[cfg(target_os = "macos")]
     let (sender_menu_bar, receiver_menu_bar) = mpsc::channel::<HashMap<String, bool>>();
-
-    thread::spawn(|| {
+    
+    #[cfg(not(target_os = "macos"))]
+    {
+        let (sender_menu_bar, _receiver_menu_bar) = mpsc::channel::<HashMap<String, bool>>();
         x1(sender_menu_bar).unwrap();
-    });
+    }
 
-    let status_item = RefCell::new(StatusItem::new("🎛️", Menu::new(vec![])));
+    #[cfg(target_os = "macos")]
+    {
+	thread::spawn(|| {
+            x1(sender_menu_bar).unwrap();
+	});
 
-    sync_infinite_event_loop(receiver_menu_bar, move |x1| {
-        let items = x1
-            .iter()
-            .map(|(name, connected)| MenuItem::new(format!("{} {}", if *connected { "🟢" } else { "🔴" }, name), None, None))
-            .collect();
-        status_item.borrow_mut().set_menu(Menu::new(items));
-    });
+	let status_item = RefCell::new(StatusItem::new("🎛️", Menu::new(vec![])));
+
+	sync_infinite_event_loop(receiver_menu_bar, move |x1| {
+            let items = x1
+		.iter()
+		.map(|(name, connected)| MenuItem::new(format!("{} {}", if *connected { "🟢" } else { "🔴" }, name), None, None))
+		.collect();
+            status_item.borrow_mut().set_menu(Menu::new(items));
+	});
+    }
 }
 
 fn x1(sender_menu_bar: Sender<HashMap<String, bool>>) -> rusb::Result<()> {
