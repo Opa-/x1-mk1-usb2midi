@@ -32,8 +32,10 @@ fn main() {
     let (sender_menu_bar, receiver_menu_bar) = mpsc::channel::<HashMap<String, bool>>();
     
     #[cfg(not(target_os = "macos"))]
-    let (sender_menu_bar, _receiver_menu_bar) = mpsc::channel::<HashMap<String, bool>>();
-    x1(sender_menu_bar).unwrap();
+    {
+        let (sender_menu_bar, _receiver_menu_bar) = mpsc::channel::<HashMap<String, bool>>();
+        x1(sender_menu_bar).unwrap();
+    }
 
     #[cfg(target_os = "macos")]
     {
