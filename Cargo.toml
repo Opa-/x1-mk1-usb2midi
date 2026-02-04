@@ -1,6 +1,6 @@
 [package]
 name = "x1-mk1-usb2midi"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "Converts X1 Mk1 USB events to MIDI"
 
