@@ -10,6 +10,7 @@ pub struct Button {
     pub write_idx: u8,
     pub midi_ctrl_ch: u8,
     pub hotcue_ignore: bool,
+    pub shift_on_press: u8,
 }
 
 pub struct Knob {
@@ -53,7 +54,8 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        shift_on_press: 0,
                     };
                     ButtonType::Toggle(button)
                 }
@@ -65,7 +67,8 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        shift_on_press: 0,
                     };
                     ButtonType::Hold(button)
                 }
@@ -77,7 +80,8 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        shift_on_press: 0,
                     };
                     ButtonType::Hotcue(button)
                 }

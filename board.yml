@@ -168,14 +168,14 @@ buttons:
     midi_ctrl_ch: 34
     hotcue_ignore: true
   - name: "DECK_A_BUTTON_CUE"
-    type: "Toggle"
+    type: "Hold"
     read_i: 0
     read_j: 1
     write_idx: 22
     midi_ctrl_ch: 36
     hotcue_ignore: true
   - name: "DECK_A_BUTTON_CUP"
-    type: "Toggle"
+    type: "Hold"
     read_i: 2
     read_j: 6
     write_idx: 21
@@ -259,14 +259,14 @@ buttons:
     midi_ctrl_ch: 35
     hotcue_ignore: true
   - name: "DECK_B_BUTTON_CUE"
-    type: "Toggle"
+    type: "Hold"
     read_i: 2
     read_j: 1
     write_idx: 12
     midi_ctrl_ch: 37
     hotcue_ignore: true
   - name: "DECK_B_BUTTON_CUP"
-    type: "Toggle"
+    type: "Hold"
     read_i: 1
     read_j: 6
     write_idx: 11
