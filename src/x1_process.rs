@@ -147,6 +147,12 @@ impl<T: UsbContext> X1mk1<T> {
         hex2bool(buf[4], &mut binbyte[3]);
         hex2bool(buf[5], &mut binbyte[4]);
 
+        let new_shift = match self.board.buttons.get("SHIFT") {
+            Some(ButtonType::Hold(btn)) => binbyte[btn.read_i as usize][btn.read_j as usize] as u8,
+            _ => self.shift,
+        };
+        self.shift = new_shift;
+
         for (ctrl_name, button_type) in &mut self.board.buttons {
             match button_type {
                 ButtonType::Toggle(ref mut button) => {
@@ -174,16 +180,13 @@ impl<T: UsbContext> X1mk1<T> {
                     if button.curr == button.prev {
                         continue;
                     } else if button.curr {
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
-                        if ctrl_name.eq("SHIFT") {
-                            self.shift = 1;
-                        }
+                        button.shift_on_press = self.shift;
+                        let channel = if ctrl_name.eq("SHIFT") { MIDI_CHANNEL } else { MIDI_CHANNEL + self.shift };
+                        let _ = self.midi_conn_out.send(&[channel, button.midi_ctrl_ch, 127]);
                     } else {
                         self.led[button.write_idx as usize] = LED_DIM;
-                        if ctrl_name.eq("SHIFT") {
-                            self.shift = 0;
-                        }
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 0]);
+                        let channel = if ctrl_name.eq("SHIFT") { MIDI_CHANNEL } else { MIDI_CHANNEL + button.shift_on_press };
+                        let _ = self.midi_conn_out.send(&[channel, button.midi_ctrl_ch, 0]);
                     }
                     button.prev = button.curr;
                 }
@@ -195,9 +198,10 @@ impl<T: UsbContext> X1mk1<T> {
                     if button.curr == button.prev {
                         continue;
                     } else if button.curr {
+                        button.shift_on_press = self.shift;
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 127]);
                     } else {
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + self.shift, button.midi_ctrl_ch, 0]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL_HOTCUE + button.shift_on_press, button.midi_ctrl_ch, 0]);
                     }
                     button.prev = button.curr;
                 }
