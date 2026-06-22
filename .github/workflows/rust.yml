@@ -22,13 +22,13 @@ jobs:
       run: cargo build
     - name: Bundle
       if: ${{ startsWith(github.ref, 'refs/tags/') }}
-      run: ./bundle.sh aarch64-apple-darwin ${{ matrix.os }}
+      run: ./bundle.sh x86_64-apple-darwin ${{ matrix.os }}
     - name: Release macOS assets
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          target/aarch64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_x86-64-apple-darwin_${{ matrix.os }}.zip
+          target/x86_64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_x86-64-apple-darwin_${{ matrix.os }}.zip
           DecksAB.tsi
   build-macos:
     name: Build macOS (${{ matrix.os }})
