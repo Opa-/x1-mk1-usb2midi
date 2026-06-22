@@ -9,11 +9,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  build-macos-instel:
+    name: Build macOS (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ macos-15-intel, macos-26-intel ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      run: cargo build
+    - name: Bundle
+      if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      run: ./bundle.sh aarch64-apple-darwin ${{ matrix.os }}
+    - name: Release macOS assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          target/aarch64-apple-darwin/release/bundle/osx/X1Mk1-usb2midi_x86-64-apple-darwin_${{ matrix.os }}.zip
+          DecksAB.tsi
   build-macos:
     name: Build macOS (${{ matrix.os }})
     strategy:
       matrix:
-        os: [ macos-14, macos-15-intel, macos-15, macos-26-intel, macos-26 ]
+        os: [ macos-14, macos-15, macos-26 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
